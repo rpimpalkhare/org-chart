@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Org — Rajashree Pimpalkhare</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --card: #1c2530;
+    --card-h: #243040;
+    --line: #2c3a4a;
+    --text: #e8eef4;
+    --muted: #8b9aab;
+    --svp: #c9a227;
+    --vp: #6ea8ff;
+    --srd: #7dd3c7;
+    --dir: #9b8afb;
+    --srm: #f0a36b;
+    --mgr: #86c591;
+    --ic: #6b7c8d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif; }
+  header {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 16px 24px; background: rgba(15,20,25,.92);
+    border-bottom: 1px solid var(--line); backdrop-filter: blur(10px);
+  }
+  h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: .01em; }
+  h1 span { color: var(--muted); font-weight: 400; }
+  .controls { display: flex; gap: 8px; margin-left: auto; }
+  button {
+    background: var(--card); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px;
+  }
+  button:hover { background: var(--card-h); }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  .sw { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+  main { padding: 28px 20px 80px; overflow-x: auto; }
+  .tree { display: flex; flex-direction: column; align-items: center; min-width: max-content; }
+  .node-wrap { display: flex; flex-direction: column; align-items: center; }
+  .card {
+    position: relative; min-width: 210px; max-width: 240px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px 10px; cursor: default; text-align: left;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    transition: background .15s, transform .15s, box-shadow .15s;
+  }
+  .card.has-kids { cursor: pointer; }
+  .card.has-kids:hover { background: var(--card-h); transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(0,0,0,.35); }
+  .name { font-weight: 600; font-size: 14px; letter-spacing: -.01em; padding-right: 16px; }
+  .title { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .meta { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .pill {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    background: #243140; color: var(--text);
+  }
+  .pill.team { background: #1e3a2f; color: #9be7c4; }
+  .pill.directs { background: #1e3048; color: #9bc4f0; }
+  .pill.ics { background: #2a2438; color: #cbb8ff; }
+  .leave { font-size: 10px; color: #f0c674; margin-top: 6px; letter-spacing: .04em; text-transform: uppercase; }
+  .bar { position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 2px 2px 0; }
+  .kids { display: flex; justify-content: center; align-items: flex-start; gap: 18px; padding-top: 28px; position: relative; }
+  .kids::before {
+    content: ""; position: absolute; top: 0; left: 50%; width: 0; height: 28px;
+    border-left: 1px solid var(--line);
+  }
+  .kid { position: relative; }
+  .kids > .kid:not(:only-child)::after {
+    content: ""; position: absolute; top: 0; height: 0; border-top: 1px solid var(--line);
+  }
+  .kids > .kid:first-child:not(:only-child)::after { left: 50%; right: 0; }
+  .kids > .kid:last-child:not(:only-child)::after { left: 0; right: 50%; }
+  .kids > .kid:not(:first-child):not(:last-child)::after { left: 0; right: 0; }
+  .kids > .kid::before {
+    content: ""; position: absolute; top: 0; left: 50%; width: 0; height: 28px;
+    border-left: 1px solid var(--line);
+  }
+  .kid > .node-wrap { padding-top: 28px; }
+  .hidden { display: none !important; }
+  .chev {
+    position: absolute; right: 10px; top: 10px; width: 16px; height: 16px;
+    color: var(--muted); font-size: 11px; line-height: 16px; text-align: center;
+  }
+  .ic-col {
+    display: flex; flex-direction: column; gap: 6px;
+    min-width: 200px; max-width: 240px;
+    padding-top: 28px; position: relative;
+  }
+  .ic-col::before {
+    content: ""; position: absolute; top: 0; left: 50%; width: 0; height: 28px;
+    border-left: 1px dashed var(--line);
+  }
+  .ic-col .ic-label {
+    font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); padding: 0 4px 2px;
+  }
+  .ic-row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    background: #161d25; border: 1px solid #243040; border-radius: 8px;
+    padding: 6px 10px;
+  }
+  .ic-row .n { font-size: 13px; font-weight: 500; }
+  .ic-row .t { font-size: 11px; color: var(--muted); white-space: nowrap; }
+  .ic-row .tag { font-size: 10px; color: #f0c674; margin-left: 4px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 24px 32px; }
+</style>
+</head>
+<body>
+<style>
+  #gate {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    background: #0f1419;
+  }
+  #gate.ok { display: none; }
+  #gate .box {
+    width: min(360px, 90vw);
+    background: #1c2530; border: 1px solid #2c3a4a; border-radius: 14px;
+    padding: 28px 24px 22px; box-shadow: 0 16px 48px rgba(0,0,0,.4);
+  }
+  #gate h2 { margin: 0 0 6px; font-size: 18px; }
+  #gate p { margin: 0 0 16px; color: #8b9aab; font-size: 13px; }
+  #gate input {
+    width: 100%; background: #0f1419; color: #e8eef4;
+    border: 1px solid #2c3a4a; border-radius: 8px;
+    padding: 10px 12px; font-size: 14px; outline: none;
+  }
+  #gate input:focus { border-color: #4da3ff; }
+  #gate button {
+    margin-top: 12px; width: 100%;
+    background: #243040; color: #e8eef4; border: 1px solid #2c3a4a;
+    border-radius: 8px; padding: 10px; cursor: pointer; font-size: 14px;
+  }
+  #gate button:hover { background: #2c3a4a; }
+  #gate .err { color: #f0a36b; font-size: 12px; margin-top: 10px; min-height: 16px; }
+  body.locked header, body.locked main, body.locked footer { visibility: hidden; }
+</style>
+<div id="gate">
+  <form class="box" id="gate-form" autocomplete="off">
+    <h2>Org chart</h2>
+    <p>Password required to view.</p>
+    <input id="gate-pw" type="password" placeholder="Password" autofocus />
+    <button type="submit">Open</button>
+    <div class="err" id="gate-err"></div>
+  </form>
+</div>
+<script>
+(function () {
+  const HASH = "037976175ff466dc6cf142722b3be19db4db0631120ef815daabf8062216f2fd";
+  const KEY = "orgchart.ok";
+  async function sha256(s) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+  function unlock() {
+    document.getElementById("gate").classList.add("ok");
+    document.body.classList.remove("locked");
+    sessionStorage.setItem(KEY, "1");
+  }
+  if (sessionStorage.getItem(KEY) === "1") {
+    unlock();
+    return;
+  }
+  document.body.classList.add("locked");
+  document.getElementById("gate-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const pw = document.getElementById("gate-pw").value;
+    const h = await sha256(pw);
+    if (h === HASH) unlock();
+    else document.getElementById("gate-err").textContent = "Incorrect password";
+  });
+})();
+</script>
+
+<header>
+  <h1>Org chart <span>· Working sheet 2</span></h1>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--svp)"></i>SVP</span>
+    <span><i class="sw" style="background:var(--vp)"></i>VP</span>
+    <span><i class="sw" style="background:var(--srd)"></i>Sr Dir</span>
+    <span><i class="sw" style="background:var(--dir)"></i>Dir</span>
+    <span><i class="sw" style="background:var(--srm)"></i>Sr Mgr</span>
+    <span><i class="sw" style="background:var(--mgr)"></i>Mgr</span>
+  </div>
+  <div class="controls">
+    <button id="expand">Expand all</button>
+    <button id="collapse">Collapse all</button>
+  </div>
+</header>
+<main><div class="tree" id="tree"></div></main>
+<footer>Click a card to show manager reports and that manager’s ICs in a column. Team = subtree. Direct = people reporting to them.</footer>
+<script>
+const DATA = {"name": "Rajashree Pimpalkhare", "title": "SVP", "fullTitle": "SVP, Software Engineering", "location": "", "team": 253, "directs": 12, "ics": 7, "leave": false, "icList": [{"name": "Andrew Little", "title": "VP", "fullTitle": "VP, Software Engineering", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}, {"name": "Graham Oldfield", "title": "Principal Architect", "fullTitle": "Software Engineering Principal Architect", "location": "United Kingdom - London", "leave": false, "contractor": false}, {"name": "Oleg Bivol", "title": "Principal Architect", "fullTitle": "Software Engineering Principal Architect", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Chenlu Lou", "title": "Architect", "fullTitle": "Software Engineering Architect", "location": "Tennessee - Remote", "leave": false, "contractor": false}, {"name": "Lahiru Gallege", "title": "Architect", "fullTitle": "Software Engineering Architect", "location": "Tennessee - Remote", "leave": false, "contractor": false}, {"name": "Ravi Shankar", "title": "Architect", "fullTitle": "Software Engineering Architect", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Lauren Hirsch", "title": "Sr. Executive Assistant", "fullTitle": "Sr. Executive Assistant", "location": "California - San Francisco", "leave": false, "contractor": false}], "children": [{"name": "Elhanan Rosental", "title": "VP", "fullTitle": "VP, Software Engineering", "location": "Israel - Tel Aviv", "team": 109, "directs": 8, "ics": 3, "leave": false, "icList": [{"name": "Nabih Abu Abid", "title": "Architect", "fullTitle": "Architect", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Avital Hai", "title": "EA", "fullTitle": "Senior Executive Assistant", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Alexander Levashov", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}], "children": [{"name": "Nir Sharon", "title": "Sr Director", "fullTitle": "Senior Director, Software Engineering", "location": "Israel - Tel Aviv", "team": 31, "directs": 6, "ics": 4, "leave": false, "icList": [{"name": "Lev Gorelik", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Tom Glik", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "Israel - Tel Aviv", "leave": true, "contractor": false}, {"name": "Ohad Harpaz", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Irad Ben Dosa", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}], "children": [{"name": "Eviatar Yosef", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "Israel - Tel Aviv", "team": 11, "directs": 11, "ics": 11, "leave": false, "icList": [{"name": "Liron Ben Ezra", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Nathan Slonim", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Riki Pachter", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Saby Levy", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Eran Rotbart", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Eyal Cohen", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Nir Mekin", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Ronit Shoshani", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Naor Alkobi", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Nardit Yogev", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": true, "contractor": false}, {"name": "Ofir Yichye", "title": "SWE", "fullTitle": "Software Engineering - Intern", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}], "children": []}, {"name": "Yonatan Bar-Yehuda", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "Israel - Tel Aviv", "team": 14, "directs": 14, "ics": 14, "leave": false, "icList": [{"name": "Gal Shalom", "title": "Manager", "fullTitle": "Manager, Software Engineering", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Alona Sapiro Haitovich", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Ayelet Jungreis", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Chava Labinsky", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Liran Shlomo", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Maayan Dollberg", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Mirabelle Herscu", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": true, "contractor": false}, {"name": "Nisan Tagar", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Orelie Fridler", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Guy Eden", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Hagit Malach", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Yuli Livshitz", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Neta Saar", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Malki Jusewitz", "title": "AMTS", "fullTitle": "Software Engineering AMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}], "children": []}]}, {"name": "Gila Anidjar", "title": "Director", "fullTitle": "Director, Software Engineering", "location": "Israel - Tel Aviv", "team": 17, "directs": 17, "ics": 17, "leave": false, "icList": [{"name": "Nir Zioni", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Svetlana Staloverov", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Adina Bina", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Adina Makovetsky", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Tel Aviv", "leave": false, "contractor": true}, {"name": "Chagit Assous", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Chaiki Rose", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Chaya Sharf (Krashinski)", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Neomi Kenig", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Pnina Gellis", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Reizy Rosenboum", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Rivka Zalaznik", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Ruti Hayas", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Sara Ichental", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Sari Eisen", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Yehudit Dermer", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Remote", "leave": false, "contractor": true}, {"name": "Yehudit Levi", "title": "SWE", "fullTitle": "Software Engineer", "location": "Israel - Tel Aviv", "leave": false, "contractor": true}, {"name": "Hadas Burnshtain", "title": "Business Consultant", "fullTitle": "Business Consultant", "location": "Israel - Remote", "leave": false, "contractor": true}], "children": []}, {"name": "Leah Vogel", "title": "Director", "fullTitle": "Director, Software Engineering", "location": "Israel - Tel Aviv", "team": 26, "directs": 10, "ics": 8, "leave": false, "icList": [{"name": "Inbal Ben Itamar", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Karin Lackrif", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Gal Gilboa", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Maya Shavin", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Annath Benhamou Benizri", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Eden Maximof", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Miri Kahana", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Moaad Morad", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}], "children": [{"name": "Lilach Talbi", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "Israel - Tel Aviv", "team": 10, "directs": 10, "ics": 10, "leave": false, "icList": [{"name": "Shai Ziv", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Alberto Chocron", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Gil Meyerstein", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Hagit Maidenberg", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Itay Noama", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": true, "contractor": false}, {"name": "Nir Grande", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Natalia Polozyuk", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Yair Nitzan", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Jouwana Dow", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Matan Firozi", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}], "children": []}, {"name": "Yoni Moseri", "title": "Manager", "fullTitle": "Manager, Software Engineering", "location": "Israel - Tel Aviv", "team": 6, "directs": 6, "ics": 6, "leave": false, "icList": [{"name": "Adar Tzeiri", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Eliran Sharabi", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Marko Katziv", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Shir Ben Yishay", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": true, "contractor": false}, {"name": "Itzik Hershkovitz", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Sagi Ravid", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}], "children": []}]}, {"name": "Yariv Finkelshtein", "title": "Director", "fullTitle": "Director, Software Engineering", "location": "Israel - Tel Aviv", "team": 17, "directs": 9, "ics": 8, "leave": false, "icList": [{"name": "Kerim Pereira", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Georgia - Atlanta", "leave": false, "contractor": false}, {"name": "Ofer Haim", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Utpal Hajela", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Gurgaon", "leave": false, "contractor": false}, {"name": "Roi Romano", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Sara Amar", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Sumit Jaiswal", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Chava Ben Shem", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Miriam Sallach", "title": "Software Enginner", "fullTitle": "Software Enginner", "location": "Israel - Remote", "leave": false, "contractor": true}], "children": [{"name": "Ankur Singh", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "India - Gurgaon", "team": 8, "directs": 8, "ics": 8, "leave": false, "icList": [{"name": "Akshya Jain", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Pune - Remote", "leave": false, "contractor": false}, {"name": "Bhuvnesh Mehra", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Gurgaon", "leave": false, "contractor": false}, {"name": "Jigyansoo Das", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Shubham Gupta", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Gurgaon", "leave": false, "contractor": false}, {"name": "Sunny Sadhnani", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Gurgaon", "leave": false, "contractor": false}, {"name": "Vikas Prajapat", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "India - Gurgaon", "leave": false, "contractor": false}, {"name": "Bharat Mishra", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Gurgaon", "leave": false, "contractor": false}, {"name": "Navneet Gehlot", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Gurgaon", "leave": false, "contractor": false}], "children": []}]}, {"name": "Adi Sharet", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "Israel - Tel Aviv", "team": 10, "directs": 10, "ics": 10, "leave": true, "icList": [{"name": "Hadar David", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Ram Friedmann", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Sara Baluka", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Idan Alfasy", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Ronit Melamed", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Rotem Hen", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Shay Gozansky", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Sveta Belenky", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Yosef Arraf", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Tomer Tzobel", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}], "children": []}]}, {"name": "Satya Bantupalli", "title": "VP", "fullTitle": "VP, Software Engineering", "location": "California - San Francisco", "team": 52, "directs": 9, "ics": 6, "leave": false, "icList": [{"name": "Angela Liu", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "California - San Francisco Metro - Remote", "leave": false, "contractor": false}, {"name": "Neil Parsons", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}, {"name": "Nigel Menger", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}, {"name": "Reshma Dixit", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Jenny Kravetsky", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Denina Walker", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}], "children": [{"name": "Anand Komarraju", "title": "Director", "fullTitle": "Director, Software Engineering", "location": "California - San Francisco", "team": 25, "directs": 5, "ics": 3, "leave": false, "icList": [{"name": "Hiromichi Cho", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Kartik Sharma", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Surya Rajagopal", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "California - San Francisco", "leave": false, "contractor": false}], "children": [{"name": "Alice Chu", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "California - San Francisco", "team": 8, "directs": 8, "ics": 8, "leave": false, "icList": [{"name": "Ben Lee", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Canada - Vancouver Metro - Remote", "leave": false, "contractor": false}, {"name": "Dongyao Ling", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Jesse Saunders", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}, {"name": "Xiao Han", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Rahul Mehta", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Avani Jindal", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Keyu Yuan", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Rebecca Hampton", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "California - San Francisco", "leave": false, "contractor": false}], "children": []}, {"name": "Vinay Bayya", "title": "Sr Manager", "fullTitle": "Sr Manager, Software Engineering", "location": "Washington - Bellevue", "team": 12, "directs": 12, "ics": 12, "leave": false, "icList": [{"name": "Vamsi Krishna Nadiminti", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Canada - Toronto Metro - Remote", "leave": false, "contractor": false}, {"name": "Yaxin Liu", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "New York - Remote", "leave": false, "contractor": false}, {"name": "Yi-Chin Chang", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Washington - Bellevue", "leave": false, "contractor": false}, {"name": "Nafeez Salma Chittoor Khader", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Sindhubala Ulavapalli", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Dana Yang", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Eric Willits", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Preethi Vijai Lilly", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Colorado - Denver", "leave": false, "contractor": false}, {"name": "Rani Chintha", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Riya Kukadia", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Yujie Fan", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Mahes Kumar Subramanian", "title": "Sr SWE", "fullTitle": "Senior Software Engineer", "location": "California - San Francisco", "leave": false, "contractor": false}], "children": []}]}, {"name": "Andrew Shand", "title": "Director", "fullTitle": "Director, Software Engineering", "location": "Nova Scotia - Remote", "team": 11, "directs": 11, "ics": 11, "leave": false, "icList": [{"name": "Dustin Breese", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "Colorado - Remote", "leave": false, "contractor": false}, {"name": "Jamie Wutke", "title": "PMTS", "fullTitle": "PMTS", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}, {"name": "Paul Tiarks", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "Illinois - Chicago Metro - Remote", "leave": false, "contractor": false}, {"name": "Jeff Price", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}, {"name": "Nikolai Kotula", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Colorado - Remote", "leave": false, "contractor": false}, {"name": "Adam Fisch", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Utah - Remote", "leave": false, "contractor": false}, {"name": "André Dion", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}, {"name": "Joel Harmon", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}, {"name": "Riley MacDonald", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}, {"name": "Thomas Myrden", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Nova Scotia - Remote", "leave": true, "contractor": false}, {"name": "Amisha Goyal", "title": "Sr SWE", "fullTitle": "Senior Software Engineer", "location": "Nova Scotia - Remote", "leave": false, "contractor": false}], "children": []}, {"name": "Raghav Abboy", "title": "Manager", "fullTitle": "Manager, Software Engineering", "location": "California - San Francisco", "team": 7, "directs": 7, "ics": 7, "leave": false, "icList": [{"name": "Gouri Shivani Varambally", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Hari Prasad", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Indiana - Indianapolis", "leave": false, "contractor": false}, {"name": "Naishal Patel", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Danny Wilson", "title": "LMTS", "fullTitle": "LMTS", "location": "Nova Scotia - Remote", "leave": true, "contractor": false}, {"name": "Stephen Bayard", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Tennessee - Remote", "leave": false, "contractor": false}, {"name": "Ashna Gupta", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Kim Le", "title": "Senior Member of Technical Staff", "fullTitle": "Senior Member of Technical Staff", "location": "California - San Francisco", "leave": false, "contractor": false}], "children": []}]}, {"name": "Ajay Gupta", "title": "Sr Director", "fullTitle": "Senior Director, Software Engineering", "location": "California - San Francisco", "team": 32, "directs": 6, "ics": 3, "leave": false, "icList": [{"name": "Eldar Khalyknazarov", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "Texas - Dallas Metro - Remote", "leave": false, "contractor": false}, {"name": "Prashanth Moorthy", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Arnav Mendiratta", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "California - San Francisco", "leave": false, "contractor": false}], "children": [{"name": "Sandeep Agrawal", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "India - Bangalore", "team": 11, "directs": 11, "ics": 11, "leave": false, "icList": [{"name": "Abhishek N C", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Manisha Khatri", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Srijan Bhatia", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Sunny Kumar", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Varun Ajay Gupta", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Vivek Sehrawat", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Anurag Dixit", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Jyotishman Baruah", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Safwan Ahmad", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Dinesh Reddy Poreddy", "title": "AMTS", "fullTitle": "Software Engineering AMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Jai Sri Venkata Anurag Yakkala", "title": "AMTS", "fullTitle": "Software Engineering AMTS", "location": "India - Bangalore", "leave": false, "contractor": false}], "children": []}, {"name": "Steve Thistle", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "Nova Scotia - Remote", "team": 8, "directs": 8, "ics": 8, "leave": false, "icList": [{"name": "Aditya Maniar", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Washington - Bellevue", "leave": false, "contractor": false}, {"name": "Keerthini Reddy Chimarla", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Texas - Dallas", "leave": false, "contractor": false}, {"name": "Man Kit Yau", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Canada - Vancouver Metro - Remote", "leave": false, "contractor": false}, {"name": "Roman Ivaniv", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Canada - Toronto", "leave": false, "contractor": false}, {"name": "Vincent Lai", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Canada - Vancouver Metro - Remote", "leave": false, "contractor": false}, {"name": "Brian Criscuolo", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "South Carolina - Remote", "leave": false, "contractor": false}, {"name": "Matthew Rathbun", "title": "LMTS", "fullTitle": "LMTS", "location": "Colorado - Remote", "leave": false, "contractor": false}, {"name": "Sohail Ahmed Mohammed", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Canada - Toronto Metro - Remote", "leave": true, "contractor": false}], "children": []}, {"name": "Paul Chan", "title": "Manager", "fullTitle": "Manager, Software Engineering", "location": "California - San Francisco", "team": 7, "directs": 7, "ics": 7, "leave": false, "icList": [{"name": "Naveen Vasu", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Shreyaa Sridhar", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Sindhusree Aita", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Austin Robarts", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Hao Guan", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "California - San Francisco", "leave": true, "contractor": false}, {"name": "Karthick Raghavan", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "California - San Francisco", "leave": false, "contractor": false}, {"name": "Manushi Talwar", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "California - San Francisco", "leave": false, "contractor": false}], "children": []}]}, {"name": "Karthick Srinivasan", "title": "Sr Director", "fullTitle": "Senior Director, Software Engineering", "location": "India - Hyderabad", "team": 37, "directs": 5, "ics": 2, "leave": false, "icList": [{"name": "Sandeep Chaudhary", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Ankur Yadav", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "India - Bangalore", "leave": false, "contractor": false}], "children": [{"name": "Kritica Mantri", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "India - Hyderabad", "team": 10, "directs": 10, "ics": 10, "leave": false, "icList": [{"name": "Astha Nigam", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Pragnya Sahu", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Saurabh Mittal", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Sivagopal Manapragada", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Anant Dev", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Harshita Garg", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Josson Joe Thoppil", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Pravallika Naga Sudha Sanagavarapu", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Kritarth .", "title": "AMTS", "fullTitle": "Software Engineering AMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Sruthi Vooda", "title": "AMTS", "fullTitle": "Software Engineering AMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}], "children": []}, {"name": "Siddharth Mathur", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "India - Bangalore", "team": 12, "directs": 12, "ics": 12, "leave": false, "icList": [{"name": "Akash Jain", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Akash Patel", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": true, "contractor": false}, {"name": "Asha Lakshmi Kotha", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Chakshu Mahajan", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Nitish Kumar", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Gurgaon", "leave": false, "contractor": false}, {"name": "Prakhar Londhe", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Rohit Gambhir", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Aashim Tarika", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Rajiv Karumuri", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Anchal .", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Rishabh Jaiswal", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Shweta Shah Sonar", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Bangalore", "leave": false, "contractor": false}], "children": []}, {"name": "Sri Ram Bathina", "title": "Sr Manager", "fullTitle": "Senior Manager, Software Engineering", "location": "India - Hyderabad", "team": 10, "directs": 10, "ics": 10, "leave": false, "icList": [{"name": "Nitin Saxena", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Gurgaon", "leave": false, "contractor": false}, {"name": "Shashikant Maurya", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Gurgaon", "leave": false, "contractor": false}, {"name": "Subrat Kumar Giri", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Anshul Rawat", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Bhanu Prakash Reddy Nermati", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Dushyant .", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Harshith Gowda B T", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "India - Bangalore", "leave": false, "contractor": false}, {"name": "Aaryesh Baleri", "title": "AMTS", "fullTitle": "Software Engineering AMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Aditya Gupta", "title": "AMTS", "fullTitle": "Software Engineering AMTS", "location": "India - Hyderabad", "leave": false, "contractor": false}, {"name": "Deepthi Acharya", "title": "AMTS", "fullTitle": "Software Engineering AMTS", "location": "India - Bangalore", "leave": false, "contractor": false}], "children": []}]}, {"name": "Mor Cohen", "title": "Director", "fullTitle": "Director, Software Engineering", "location": "Israel - Tel Aviv", "team": 11, "directs": 11, "ics": 11, "leave": false, "icList": [{"name": "Walter Wu", "title": "PMTS", "fullTitle": "Software Engineering PMTS", "location": "Massachusetts - Burlington", "leave": false, "contractor": false}, {"name": "Dylan Mistry", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Virginia - Mclean", "leave": false, "contractor": false}, {"name": "Eyal Tenzer", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Noga Gliksberg", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Sharon Hadar", "title": "SMTS", "fullTitle": "Software Engineering SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Avior Malkukian", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Josh Honeycutt", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "North Carolina - Remote", "leave": false, "contractor": false}, {"name": "Kfir Twizer", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Olivier Uzan", "title": "LMTS", "fullTitle": "Software Engineering LMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Miriam Lebel", "title": "MTS", "fullTitle": "Software Engineering MTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}, {"name": "Rotem Brooks", "title": "SWE", "fullTitle": "Software Engineer, SMTS", "location": "Israel - Tel Aviv", "leave": false, "contractor": false}], "children": []}]};
+
+const COLOR = {
+  'SVP': 'var(--svp)',
+  'VP': 'var(--vp)',
+  'Sr Director': 'var(--srd)',
+  'Director': 'var(--dir)',
+  'Sr Manager': 'var(--srm)',
+  'Manager': 'var(--mgr)',
+};
+
+function icColumn(list) {
+  const col = document.createElement('div');
+  col.className = 'ic-col detail';
+  const lab = document.createElement('div');
+  lab.className = 'ic-label';
+  lab.textContent = list.length + ' IC' + (list.length === 1 ? '' : 's');
+  col.appendChild(lab);
+  list.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'ic-row';
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = p.name;
+    if (p.leave) {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = 'leave';
+      n.appendChild(tag);
+    } else if (p.contractor) {
+      const tag = document.createElement('span');
+      tag.className = 'tag';
+      tag.textContent = 'C';
+      n.appendChild(tag);
+    }
+    const t = document.createElement('span');
+    t.className = 't';
+    t.textContent = p.title || '';
+    row.appendChild(n);
+    row.appendChild(t);
+    col.appendChild(row);
+  });
+  return col;
+}
+
+function card(node, depth) {
+  const wrap = document.createElement('div');
+  wrap.className = 'node-wrap';
+
+  const c = document.createElement('div');
+  c.className = 'card ' + node.title.replace(/\s+/g,'');
+  const hasDetail = node.children.length || (node.icList && node.icList.length);
+  if (hasDetail) c.classList.add('has-kids');
+
+  const bar = document.createElement('div');
+  bar.className = 'bar';
+  bar.style.background = COLOR[node.title] || 'var(--ic)';
+  c.appendChild(bar);
+
+  if (hasDetail) {
+    const ch = document.createElement('div');
+    ch.className = 'chev';
+    ch.textContent = depth >= 1 ? '▸' : '▾';
+    c.appendChild(ch);
+  }
+
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = node.name;
+  c.appendChild(name);
+
+  const title = document.createElement('div');
+  title.className = 'title';
+  title.textContent = node.title + (node.location ? ' · ' + node.location.split(' - ')[0] : '');
+  c.appendChild(title);
+
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.innerHTML = `<span class="pill team">${node.team} team</span>` +
+    `<span class="pill directs">${node.directs} direct</span>` +
+    (node.ics ? `<span class="pill ics">${node.ics} IC</span>` : '');
+  c.appendChild(meta);
+
+  if (node.leave) {
+    const l = document.createElement('div');
+    l.className = 'leave';
+    l.textContent = 'On leave';
+    c.appendChild(l);
+  }
+
+  wrap.appendChild(c);
+
+  if (hasDetail) {
+    const kids = document.createElement('div');
+    kids.className = 'kids detail';
+    if (depth >= 1) kids.classList.add('hidden');
+
+    node.children.forEach(ch => {
+      const k = document.createElement('div');
+      k.className = 'kid';
+      k.appendChild(card(ch, depth + 1));
+      kids.appendChild(k);
+    });
+
+    if (node.icList && node.icList.length) {
+      const k = document.createElement('div');
+      k.className = 'kid';
+      const icWrap = document.createElement('div');
+      icWrap.className = 'node-wrap';
+      icWrap.appendChild(icColumn(node.icList));
+      k.appendChild(icWrap);
+      kids.appendChild(k);
+    }
+
+    wrap.appendChild(kids);
+
+    if (depth >= 1) c.classList.add('collapsed');
+    c.addEventListener('click', () => {
+      const hidden = kids.classList.toggle('hidden');
+      c.classList.toggle('collapsed', hidden);
+      c.querySelector('.chev').textContent = hidden ? '▸' : '▾';
+    });
+  }
+  return wrap;
+}
+
+document.getElementById('tree').appendChild(card(DATA, 0));
+
+function setAll(hide) {
+  document.querySelectorAll('.detail').forEach(k => {
+    if (k.classList.contains('kids')) k.classList.toggle('hidden', hide);
+  });
+  document.querySelectorAll('.card.has-kids').forEach(c => {
+    c.classList.toggle('collapsed', hide);
+    const ch = c.querySelector('.chev');
+    if (ch) ch.textContent = hide ? '▸' : '▾';
+  });
+}
+document.getElementById('expand').onclick = () => setAll(false);
+document.getElementById('collapse').onclick = () => setAll(true);
+</script>
+</body>
+</html>
